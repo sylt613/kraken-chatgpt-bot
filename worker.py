@@ -22,7 +22,7 @@ except Exception:
     KrakenAPI = None
 
 # ---------- CONFIG ----------
-DRY_RUN = True   # KEEP True initially. Set to False only after careful local testing.
+DRY_RUN = os.getenv("DRY_RUN", "True").lower() in ("true", "1", "yes")  # Control via GitHub Secret
 TOP_N = 10
 HISTORY_FILE = "data/history.json"
 OPENAI_MODEL = "gpt-4o"  # change if you prefer another model
