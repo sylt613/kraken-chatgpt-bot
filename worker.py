@@ -323,11 +323,23 @@ def ask_openai_for_top_symbols():
     # Sort by score and take top performers
     scored_pairs.sort(key=lambda x: x[1], reverse=True)
     
+    # MARKET REGIME FILTER - Count how many pairs are bullish
+    bullish_count = sum(1 for pair, score, ta, ticker in scored_pairs if score >= 60)
+    market_is_bullish = bullish_count >= 5
+    
+    print(f"Market Regime: {bullish_count}/15 pairs bullish (need 5+)")
+    if not market_is_bullish:
+        print("⚠️ BEARISH MARKET - Reducing position sizes and being selective")
+    
     # Option 1: Pure technical strategy (no GPT)
     if not USE_GPT or not client.api_key:
         print("Using pure technical scoring (GPT disabled)")
         top_picks = []
         for pair, score, ta, ticker in scored_pairs[:TOP_N]:
+            # Skip low scores in bearish market
+            min_score = 65 if not market_is_bullish else 50
+            if score < min_score:
+                continue
             # Convert to proper format
             formatted = pair.replace("USD", "/USD").replace("XBT/", "BTC/")
             if "/" not in formatted:
