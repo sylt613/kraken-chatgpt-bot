@@ -19,6 +19,7 @@ import time
 from datetime import datetime
 from openai import OpenAI
 import requests
+import numpy as np
 
 # Optional Kraken libs used only if DRY_RUN=False and KRAKEN credentials provided
 try:
@@ -91,6 +92,97 @@ def fetch_kraken_ticker_data(pairs):
         print(f"Kraken ticker error: {e}")
         return {}
 
+def fetch_kraken_ohlc(pair, interval=60):
+    """Fetch OHLC data from Kraken for technical analysis (interval in minutes)"""
+    try:
+        url = "https://api.kraken.com/0/public/OHLC"
+        resp = requests.get(url, params={"pair": pair, "interval": interval}, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        
+        if data.get("error") and len(data["error"]) > 0:
+            return []
+        
+        result = data.get("result", {})
+        # Get the actual pair key (Kraken returns modified names)
+        pair_key = [k for k in result.keys() if k != "last"][0] if result else None
+        if not pair_key:
+            return []
+        
+        ohlc = result[pair_key]
+        # Return last 200 candles for MA calculation
+        return ohlc[-200:] if len(ohlc) > 200 else ohlc
+    except Exception as e:
+        print(f"OHLC error for {pair}: {e}")
+        return []
+
+def calculate_rsi(prices, period=14):
+    """Calculate RSI (Relative Strength Index)"""
+    if len(prices) < period + 1:
+        return None
+    
+    deltas = np.diff(prices)
+    gains = np.where(deltas > 0, deltas, 0)
+    losses = np.where(deltas < 0, -deltas, 0)
+    
+    avg_gain = np.mean(gains[:period])
+    avg_loss = np.mean(losses[:period])
+    
+    for i in range(period, len(gains)):
+        avg_gain = (avg_gain * (period - 1) + gains[i]) / period
+        avg_loss = (avg_loss * (period - 1) + losses[i]) / period
+    
+    if avg_loss == 0:
+        return 100
+    
+    rs = avg_gain / avg_loss
+    rsi = 100 - (100 / (1 + rs))
+    return rsi
+
+def calculate_moving_averages(prices):
+    """Calculate 20, 50 moving averages"""
+    mas = {}
+    if len(prices) >= 20:
+        mas['ma20'] = np.mean(prices[-20:])
+    if len(prices) >= 50:
+        mas['ma50'] = np.mean(prices[-50:])
+    return mas
+
+def analyze_technicals(pair):
+    """Perform technical analysis on a trading pair"""
+    ohlc = fetch_kraken_ohlc(pair, interval=60)  # 1-hour candles
+    if not ohlc or len(ohlc) < 20:
+        return {}
+    
+    # Extract closing prices
+    closes = np.array([float(candle[4]) for candle in ohlc])
+    volumes = np.array([float(candle[6]) for candle in ohlc])
+    
+    # Calculate indicators
+    rsi = calculate_rsi(closes)
+    mas = calculate_moving_averages(closes)
+    
+    current_price = closes[-1]
+    avg_volume = np.mean(volumes[-20:]) if len(volumes) >= 20 else volumes.mean()
+    recent_volume = volumes[-1]
+    volume_ratio = recent_volume / avg_volume if avg_volume > 0 else 1
+    
+    # Momentum: price change over last 7 periods
+    momentum = ((closes[-1] - closes[-7]) / closes[-7] * 100) if len(closes) >= 7 else 0
+    
+    # Trend: price vs MA50
+    trend = "bullish" if mas.get('ma50') and current_price > mas['ma50'] else "bearish"
+    
+    return {
+        "rsi": round(rsi, 2) if rsi else None,
+        "ma20": round(mas.get('ma20', 0), 2),
+        "ma50": round(mas.get('ma50', 0), 2),
+        "volume_ratio": round(volume_ratio, 2),
+        "momentum_7h": round(momentum, 2),
+        "trend": trend,
+        "current_price": round(current_price, 2)
+    }
+
 def ensure_history_file():
     os.makedirs("data", exist_ok=True)
     if not os.path.exists(HISTORY_FILE):
@@ -117,21 +209,78 @@ def ask_openai_for_top_symbols():
                     "LTCUSD", "DOGEUSD", "SHIBUSD", "APTUSD", "OPUSD"]
     ticker_data = fetch_kraken_ticker_data(kraken_pairs)
     
-    # Build context with real market data
-    market_context = "REAL-TIME MARKET DATA:\n\n"
-    market_context += "CoinGecko Trending (Top 10):\n"
-    for i, coin in enumerate(trending[:10], 1):
+    # Analyze technicals and filter by quality
+    technical_analysis = {}
+    scored_pairs = []
+    
+    print("Analyzing technicals...")
+    for pair in kraken_pairs:
+        if pair not in ticker_data:
+            continue
+            
+        ta = analyze_technicals(pair)
+        if not ta:
+            continue
+            
+        technical_analysis[pair] = ta
+        
+        # Score the pair (0-100)
+        score = 0
+        
+        # RSI scoring (30-70 is good, avoid extremes)
+        if ta.get('rsi'):
+            if 40 <= ta['rsi'] <= 60:
+                score += 25
+            elif 30 <= ta['rsi'] <= 70:
+                score += 15
+        
+        # Trend scoring
+        if ta.get('trend') == 'bullish':
+            score += 20
+        
+        # Volume scoring (high volume = more reliable)
+        if ta.get('volume_ratio', 0) > 1.5:
+            score += 15
+        elif ta.get('volume_ratio', 0) > 1.0:
+            score += 10
+        
+        # Momentum scoring
+        momentum = ta.get('momentum_7h', 0)
+        if momentum > 5:
+            score += 20
+        elif momentum > 0:
+            score += 10
+        
+        # 24h performance
+        change_24h = ticker_data[pair]['24h_change_pct']
+        if change_24h > 5:
+            score += 10
+        elif change_24h > 0:
+            score += 5
+        
+        scored_pairs.append((pair, score, ta, ticker_data[pair]))
+    
+    # Sort by score and take top performers
+    scored_pairs.sort(key=lambda x: x[1], reverse=True)
+    
+    # Build context with real market data + technical analysis
+    market_context = "REAL-TIME MARKET DATA + TECHNICAL ANALYSIS:\n\n"
+    market_context += "CoinGecko Trending (Top 5):\n"
+    for i, coin in enumerate(trending[:5], 1):
         market_context += f"{i}. {coin['symbol']} ({coin['name']}) - Rank: {coin['market_cap_rank']}\n"
     
-    market_context += "\nKraken 24h Performance:\n"
-    for pair, data in sorted(ticker_data.items(), key=lambda x: x[1]['24h_change_pct'], reverse=True)[:10]:
-        market_context += f"{pair}: {data['24h_change_pct']:.2f}% | Vol: ${data['24h_volume']:,.0f}\n"
+    market_context += "\nTop Kraken Pairs by Technical Score:\n"
+    for pair, score, ta, ticker in scored_pairs[:12]:
+        market_context += f"{pair}: Score={score}/100 | RSI={ta.get('rsi','N/A')} | "
+        market_context += f"Trend={ta.get('trend','N/A')} | 24h={ticker['24h_change_pct']:.1f}% | "
+        market_context += f"Vol Ratio={ta.get('volume_ratio','N/A')}x | Momentum={ta.get('momentum_7h','N/A')}%\n"
     
     prompt = (
         f"{market_context}\n\n"
-        f"Based on the REAL market data above, return ONLY a JSON array of the top {TOP_N} "
+        f"Based on the REAL technical analysis above, return ONLY a JSON array of the top {TOP_N} "
         "spot trading pairs on Kraken for swing trading over the next 1-3 weeks. "
-        "Prioritize coins with: strong 24h performance, high volume, trending status, and bullish momentum. "
+        "Prioritize pairs with: high technical scores, bullish trends, healthy RSI (30-70), strong momentum, and high volume. "
+        "AVOID: extreme RSI (>80 overbought, <20 oversold), low scores, bearish trends. "
         "Use Kraken pair format (example: \"XBT/USD\", \"ETH/USD\"). "
         "Output ONLY a JSON array of strings."
     )
@@ -139,10 +288,10 @@ def ask_openai_for_top_symbols():
         resp = client.chat.completions.create(
             model=OPENAI_MODEL,
             messages=[
-                {"role":"system","content":"You are an expert crypto trader analyzing REAL market data. Base recommendations on the actual data provided."},
+                {"role":"system","content":"You are an expert crypto trader analyzing REAL technical data. Base recommendations ONLY on the technical scores and indicators provided."},
                 {"role":"user","content":prompt}
             ],
-            temperature=0.4,
+            temperature=0.3,
             max_tokens=300
         )
         text = resp.choices[0].message.content.strip()

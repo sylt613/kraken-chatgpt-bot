@@ -2,3 +2,4 @@ openai
 krakenex
 pykrakenapi
 requests
+numpy
