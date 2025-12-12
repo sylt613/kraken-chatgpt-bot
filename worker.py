@@ -18,6 +18,7 @@ import json
 import time
 from datetime import datetime
 from openai import OpenAI
+import requests
 
 # Optional Kraken libs used only if DRY_RUN=False and KRAKEN credentials provided
 try:
@@ -40,6 +41,56 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 KRAKEN_KEY = os.getenv("KRAKEN_API_KEY")
 KRAKEN_SECRET = os.getenv("KRAKEN_API_SECRET")
 
+def fetch_coingecko_trending():
+    """Fetch trending coins from CoinGecko (free, no API key needed)"""
+    try:
+        url = "https://api.coingecko.com/api/v3/search/trending"
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        trending = []
+        for item in data.get("coins", [])[:15]:
+            coin = item.get("item", {})
+            trending.append({
+                "symbol": coin.get("symbol", "").upper(),
+                "name": coin.get("name", ""),
+                "market_cap_rank": coin.get("market_cap_rank", 0),
+                "price_btc": coin.get("price_btc", 0)
+            })
+        return trending
+    except Exception as e:
+        print(f"CoinGecko trending error: {e}")
+        return []
+
+def fetch_kraken_ticker_data(pairs):
+    """Fetch real-time price data from Kraken for given pairs"""
+    try:
+        # Kraken public API - no auth needed
+        url = "https://api.kraken.com/0/public/Ticker"
+        pairs_str = ",".join(pairs)
+        resp = requests.get(url, params={"pair": pairs_str}, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        
+        if data.get("error") and len(data["error"]) > 0:
+            print(f"Kraken API error: {data['error']}")
+            return {}
+        
+        result = {}
+        for pair, info in data.get("result", {}).items():
+            # Extract key metrics
+            result[pair] = {
+                "last_price": float(info["c"][0]),
+                "24h_change_pct": float(info["p"][1]),
+                "24h_volume": float(info["v"][1]),
+                "24h_high": float(info["h"][1]),
+                "24h_low": float(info["l"][1])
+            }
+        return result
+    except Exception as e:
+        print(f"Kraken ticker error: {e}")
+        return {}
+
 def ensure_history_file():
     os.makedirs("data", exist_ok=True)
     if not os.path.exists(HISTORY_FILE):
@@ -57,12 +108,30 @@ def write_history(data):
         json.dump(data, f, indent=2)
 
 def ask_openai_for_top_symbols():
+    # Fetch real market data
+    trending = fetch_coingecko_trending()
+    
+    # Common Kraken pairs to check
+    kraken_pairs = ["XBTUSD", "ETHUSD", "SOLUSD", "ADAUSD", "DOTUSD", 
+                    "LINKUSD", "AVAXUSD", "MATICUSD", "UNIUSD", "ATOMUSD",
+                    "LTCUSD", "DOGEUSD", "SHIBUSD", "APTUSD", "OPUSD"]
+    ticker_data = fetch_kraken_ticker_data(kraken_pairs)
+    
+    # Build context with real market data
+    market_context = "REAL-TIME MARKET DATA:\n\n"
+    market_context += "CoinGecko Trending (Top 10):\n"
+    for i, coin in enumerate(trending[:10], 1):
+        market_context += f"{i}. {coin['symbol']} ({coin['name']}) - Rank: {coin['market_cap_rank']}\n"
+    
+    market_context += "\nKraken 24h Performance:\n"
+    for pair, data in sorted(ticker_data.items(), key=lambda x: x[1]['24h_change_pct'], reverse=True)[:10]:
+        market_context += f"{pair}: {data['24h_change_pct']:.2f}% | Vol: ${data['24h_volume']:,.0f}\n"
+    
     prompt = (
-        f"Return ONLY a JSON array of the top {TOP_N} "
+        f"{market_context}\n\n"
+        f"Based on the REAL market data above, return ONLY a JSON array of the top {TOP_N} "
         "spot trading pairs on Kraken for swing trading over the next 1-3 weeks. "
-        "Assume you are using the latest data including technicals, sentiment, and news. "
-        "Consider: recent price action, volume trends, social media sentiment, regulatory news, and macro trends. "
-        "Prioritize coins with strong momentum and bullish setups. "
+        "Prioritize coins with: strong 24h performance, high volume, trending status, and bullish momentum. "
         "Use Kraken pair format (example: \"XBT/USD\", \"ETH/USD\"). "
         "Output ONLY a JSON array of strings."
     )
@@ -70,10 +139,10 @@ def ask_openai_for_top_symbols():
         resp = client.chat.completions.create(
             model=OPENAI_MODEL,
             messages=[
-                {"role":"system","content":"You are an expert crypto trader with access to market data. Provide data-driven recommendations based on technical analysis, sentiment, and current market conditions."},
+                {"role":"system","content":"You are an expert crypto trader analyzing REAL market data. Base recommendations on the actual data provided."},
                 {"role":"user","content":prompt}
             ],
-            temperature=0.6,
+            temperature=0.4,
             max_tokens=300
         )
         text = resp.choices[0].message.content.strip()
@@ -90,10 +159,19 @@ def ask_openai_for_top_symbols():
         print("OpenAI error:", e)
     return []
 
-def ask_openai_bullish(symbol):
+def ask_openai_bullish(symbol, market_data=None):
+    # Add real market data context if available
+    context = ""
+    if market_data:
+        context = f"REAL DATA for {symbol}: "
+        context += f"24h Change: {market_data.get('24h_change_pct', 'N/A')}%, "
+        context += f"Volume: ${market_data.get('24h_volume', 'N/A'):,.0f}, "
+        context += f"Price: ${market_data.get('last_price', 'N/A')}\n\n"
+    
     prompt = (
+        f"{context}"
         f"Is {symbol} bullish for a 1-3 week swing trade horizon? "
-        "Consider: current sentiment, recent news, technical patterns, volume trends, and market momentum. "
+        "Consider: the real data above, technical patterns, volume trends, and market momentum. "
         "Be specific about catalysts or risks. "
         "Return a JSON object EXACTLY like: {{\"bullish\": true/false, \"reason\": \"one-sentence reason\", \"confidence\": 0-100}}"
     )
@@ -101,7 +179,7 @@ def ask_openai_bullish(symbol):
         resp = client.chat.completions.create(
             model=OPENAI_MODEL,
             messages=[
-                {"role":"system","content":"You are a crypto market analyst. Provide honest, data-driven assessments with specific reasoning."},
+                {"role":"system","content":"You are a crypto market analyst analyzing REAL market data. Base assessments on actual metrics provided."},
                 {"role":"user","content":prompt}
             ],
             temperature=0.3,
@@ -167,16 +245,23 @@ def main():
     top = ask_openai_for_top_symbols()
     print("Top list from OpenAI:", top)
 
+    # Fetch real market data for selected symbols
+    ticker_data = fetch_kraken_ticker_data(top)
+    
     # For each current position (we don't maintain a DB here in the serverless run),
     # we conservativey just record the top list and a bullish check for each symbol.
     results = []
     for s in top:
-        bull = ask_openai_bullish(s)
+        # Get market data for this symbol if available
+        market_info = ticker_data.get(s.replace("/", "").replace("-", ""), {})
+        bull = ask_openai_bullish(s, market_info)
         results.append({
             "symbol": s, 
             "bullish": bull.get("bullish", False), 
             "reason": bull.get("reason",""),
-            "confidence": bull.get("confidence", 0)
+            "confidence": bull.get("confidence", 0),
+            "24h_change": market_info.get("24h_change_pct"),
+            "volume_24h": market_info.get("24h_volume")
         })
 
     equity = get_equity_placeholder()
