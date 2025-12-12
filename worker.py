@@ -5,6 +5,12 @@ Serverless trading worker designed to run once and exit.
 - Records simple history (timestamp, top10, equity placeholder) to data/history.json
 - Optionally (DRY_RUN=False) will place simulated or real Kraken orders (simple market buys/sells)
 - Intended to run in GitHub Actions on a schedule
+
+IMPORTANT LIMITATION:
+- OpenAI models don't have real-time web access or live market data
+- Recommendations are based on training data (which has a cutoff date)
+- For real web search, consider integrating: Perplexity API, Tavily, or SerpAPI
+- This is a learning/experimental bot - NOT production-ready for live trading
 """
 
 import os
@@ -26,7 +32,7 @@ DRY_RUN = os.getenv("DRY_RUN", "True").lower() in ("true", "1", "yes")  # Contro
 TRADE_ALLOCATION_PCT = float(os.getenv("TRADE_ALLOCATION_PCT", "10"))  # % of account per trade
 TOP_N = 10
 HISTORY_FILE = "data/history.json"
-OPENAI_MODEL = "gpt-4o"  # change if you prefer another model
+OPENAI_MODEL = "gpt-4o"  # gpt-4o for best reasoning (Note: GPT models don't have real-time web access)
 # --------------------------------
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -52,14 +58,21 @@ def write_history(data):
 
 def ask_openai_for_top_symbols():
     prompt = (
-        f"You are an expert crypto swing trader. Return ONLY a JSON array of the top {TOP_N} "
+        f"Return ONLY a JSON array of the top {TOP_N} "
         "spot trading pairs on Kraken for swing trading over the next 1-3 weeks. "
-        "Use Kraken pair format (example: \"XBT/USD\", \"ETH/USD\"). Output ONLY a JSON array."
+        "Assume you are using the latest data including technicals, sentiment, and news. "
+        "Consider: recent price action, volume trends, social media sentiment, regulatory news, and macro trends. "
+        "Prioritize coins with strong momentum and bullish setups. "
+        "Use Kraken pair format (example: \"XBT/USD\", \"ETH/USD\"). "
+        "Output ONLY a JSON array of strings."
     )
     try:
         resp = client.chat.completions.create(
             model=OPENAI_MODEL,
-            messages=[{"role":"user","content":prompt}],
+            messages=[
+                {"role":"system","content":"You are an expert crypto trader with access to market data. Provide data-driven recommendations based on technical analysis, sentiment, and current market conditions."},
+                {"role":"user","content":prompt}
+            ],
             temperature=0.6,
             max_tokens=300
         )
@@ -79,13 +92,18 @@ def ask_openai_for_top_symbols():
 
 def ask_openai_bullish(symbol):
     prompt = (
-        f"Is {symbol} bullish for a 1-3 week swing trade horizon? Consider sentiment, recent news, and technicals. "
-        "Return a JSON object EXACTLY like: {{\"bullish\": true/false, \"reason\": \"one-sentence reason\"}}"
+        f"Is {symbol} bullish for a 1-3 week swing trade horizon? "
+        "Consider: current sentiment, recent news, technical patterns, volume trends, and market momentum. "
+        "Be specific about catalysts or risks. "
+        "Return a JSON object EXACTLY like: {{\"bullish\": true/false, \"reason\": \"one-sentence reason\", \"confidence\": 0-100}}"
     )
     try:
         resp = client.chat.completions.create(
             model=OPENAI_MODEL,
-            messages=[{"role":"user","content":prompt}],
+            messages=[
+                {"role":"system","content":"You are a crypto market analyst. Provide honest, data-driven assessments with specific reasoning."},
+                {"role":"user","content":prompt}
+            ],
             temperature=0.3,
             max_tokens=150
         )
@@ -154,7 +172,12 @@ def main():
     results = []
     for s in top:
         bull = ask_openai_bullish(s)
-        results.append({"symbol": s, "bullish": bull.get("bullish", False), "reason": bull.get("reason","")})
+        results.append({
+            "symbol": s, 
+            "bullish": bull.get("bullish", False), 
+            "reason": bull.get("reason",""),
+            "confidence": bull.get("confidence", 0)
+        })
 
     equity = get_equity_placeholder()
 
