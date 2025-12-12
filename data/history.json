@@ -196,5 +196,103 @@
       }
     ],
     "equity": null
+  },
+  {
+    "time": "2025-12-12T05:29:51.547680",
+    "top": [
+      "```json",
+      "[",
+      "ETH/USD",
+      "BTC/USD",
+      "SOL/USD",
+      "ADA/USD",
+      "DOT/USD",
+      "XRP/USD",
+      "LTC/USD",
+      "LINK/USD"
+    ],
+    "top_diagnostics": [
+      {
+        "symbol": "```json",
+        "bullish": false,
+        "reason": "I'm sorry, but I need the specific market data to provide an analysis. Please provide the relevant data or metrics for the cryptocurrency in question, and I can help assess its potential for a 1-3 week swing trade.",
+        "confidence": 0,
+        "24h_change": null,
+        "volume_24h": null
+      },
+      {
+        "symbol": "[",
+        "bullish": false,
+        "reason": "I'm sorry, but I need the specific data or context you are referring to in order to provide an assessment. Please provide the relevant market data or specify the asset you are analyzing.",
+        "confidence": 0,
+        "24h_change": null,
+        "volume_24h": null
+      },
+      {
+        "symbol": "ETH/USD",
+        "bullish": true,
+        "reason": "I'm sorry, but I can't provide real-time market analysis or access current data. However, I can guide you on how to analyze the market for a swing trade decision.\n\nTo determine if ETH/USD is bullish for a 1-3 week swing trade horizon, you should consider the following:\n\n1. **Technical Patterns**: Look for bullish patterns such as ascending triangles, bullish flags, or double bottoms on the chart.\n\n2. **Volume Trends**: Increasing volume on upswings and decreasing volume on downswings can indicate strong bullish momentum.\n\n3. **Market Momentum**: Use indicators like the RSI (Relative Strength Index) or MACD (Moving Average Convergence Divergence) to assess momentum. An RSI above 50 or a MAC",
+        "confidence": 0,
+        "24h_change": null,
+        "volume_24h": null
+      },
+      {
+        "symbol": "BTC/USD",
+        "bullish": true,
+        "reason": "I'm sorry, but I don't have access to real-time data or the ability to analyze current market conditions. However, I can guide you on how to assess whether BTC/USD is bullish for a 1-3 week swing trade horizon by considering various factors:\n\n1. **Technical Patterns**: Look for bullish patterns such as ascending triangles, bullish flags, or inverse head and shoulders on the chart. These patterns can indicate potential upward momentum.\n\n2. **Volume Trends**: Check if there is increasing volume on up days compared to down days. This can suggest strong buying interest and support a bullish outlook.\n\n3. **Market Momentum**: Use indicators like the Relative Strength Index (RSI) or Moving Average Convergence Divergence (MACD) to",
+        "confidence": 0,
+        "24h_change": null,
+        "volume_24h": null
+      },
+      {
+        "symbol": "SOL/USD",
+        "bullish": false,
+        "reason": "I'm sorry, but I need the actual market data to provide an analysis. Please provide the relevant data or metrics for SOL/USD, and I'll be able to assist you further.",
+        "confidence": 0,
+        "24h_change": null,
+        "volume_24h": null
+      },
+      {
+        "symbol": "ADA/USD",
+        "bullish": false,
+        "reason": "I'm sorry, but I need the specific real market data to assess the ADA/USD pair for a 1-3 week swing trade horizon. Please provide the relevant technical patterns, volume trends, and market momentum data for a proper analysis.",
+        "confidence": 0,
+        "24h_change": null,
+        "volume_24h": null
+      },
+      {
+        "symbol": "DOT/USD",
+        "bullish": true,
+        "reason": "I'm sorry, but I don't have access to real-time market data or specific data above to analyze the DOT/USD pair. However, I can guide you on how to analyze it. You should consider the following:\n\n1. **Technical Patterns**: Look for bullish patterns such as ascending triangles, cup and handle, or bullish flags in the chart.\n\n2. **Volume Trends**: Increasing volume on up days and decreasing volume on down days typically supports a bullish trend.\n\n3. **Market Momentum**: Check indicators like the RSI (Relative Strength Index) or MACD (Moving Average Convergence Divergence) for bullish signals.\n\n4. **Catalysts**: News about Polkadot's ecosystem developments or partnerships could act as positive catalysts.\n\n5.",
+        "confidence": 0,
+        "24h_change": null,
+        "volume_24h": null
+      },
+      {
+        "symbol": "XRP/USD",
+        "bullish": true,
+        "reason": "I'm sorry, but I don't have access to real-time data or the ability to analyze current market conditions. However, I can guide you on how to assess the situation using available tools and metrics.\n\nTo evaluate whether XRP/USD is bullish for a 1-3 week swing trade, consider the following:\n\n1. **Technical Patterns**: Look for bullish patterns such as ascending triangles, bullish flags, or cup and handle formations on the chart.\n\n2. **Volume Trends**: An increase in volume accompanying upward price movements can indicate strong buying interest, which is a bullish sign.\n\n3. **Market Momentum**: Use indicators like the Relative Strength Index (RSI) or Moving Average Convergence Divergence (MACD) to assess momentum. An RSI",
+        "confidence": 0,
+        "24h_change": null,
+        "volume_24h": null
+      },
+      {
+        "symbol": "LTC/USD",
+        "bullish": true,
+        "reason": "I'm sorry, but I don't have access to real-time data to provide an accurate analysis. However, I can guide you on how to assess the situation using available data. Look for the following:\n\n1. **Technical Patterns**: Identify if there are any bullish patterns such as ascending triangles, bullish flags, or inverse head and shoulders on the LTC/USD chart.\n\n2. **Volume Trends**: Check if there is increasing volume on upward price movements, which can indicate strong buying interest.\n\n3. **Market Momentum**: Use indicators like the Relative Strength Index (RSI) or Moving Average Convergence Divergence (MACD) to assess if momentum is favoring the bulls.\n\n4. **Catalysts**: Identify any upcoming events or news that",
+        "confidence": 0,
+        "24h_change": null,
+        "volume_24h": null
+      },
+      {
+        "symbol": "LINK/USD",
+        "bullish": false,
+        "reason": "I'm sorry, but I cannot provide a specific analysis without the actual market data. Please provide the relevant data for LINK/USD, including technical patterns, volume trends, and market momentum, so I can assist you further.",
+        "confidence": 0,
+        "24h_change": null,
+        "volume_24h": null
+      }
+    ],
+    "equity": null
   }
 ]
