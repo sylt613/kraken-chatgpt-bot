@@ -16,7 +16,8 @@ IMPORTANT LIMITATION:
 import os
 import json
 import time
-from datetime import datetime
+import csv
+from datetime import datetime, timedelta
 from openai import OpenAI
 import requests
 import numpy as np
@@ -31,10 +32,17 @@ except Exception:
 
 # ---------- CONFIG ----------
 DRY_RUN = os.getenv("DRY_RUN", "True").lower() in ("true", "1", "yes")  # Control via GitHub Secret
+USE_GPT = os.getenv("USE_GPT", "True").lower() in ("true", "1", "yes")  # Optional GPT analysis
 TRADE_ALLOCATION_PCT = float(os.getenv("TRADE_ALLOCATION_PCT", "10"))  # % of account per trade
 TOP_N = 10
 HISTORY_FILE = "data/history.json"
-OPENAI_MODEL = "gpt-4o"  # gpt-4o for best reasoning (Note: GPT models don't have real-time web access)
+POSITIONS_FILE = "data/positions.json"
+TRADES_CSV = "data/trades.csv"
+PERFORMANCE_CSV = "data/performance.csv"
+OPENAI_MODEL = "gpt-4o"  # gpt-4o for best reasoning
+INITIAL_CAPITAL = 10000.0  # Starting capital for paper trading
+STOP_LOSS_PCT = 15.0  # Stop loss percentage
+TAKE_PROFIT_PCT = 25.0  # Take profit percentage
 # --------------------------------
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -189,6 +197,48 @@ def ensure_history_file():
         with open(HISTORY_FILE, "w") as f:
             json.dump([], f, indent=2)
 
+def read_positions():
+    """Read current open positions"""
+    os.makedirs("data", exist_ok=True)
+    if not os.path.exists(POSITIONS_FILE):
+        return {"cash": INITIAL_CAPITAL, "positions": []}
+    with open(POSITIONS_FILE, "r") as f:
+        return json.load(f)
+
+def write_positions(data):
+    """Write positions to file"""
+    os.makedirs("data", exist_ok=True)
+    with open(POSITIONS_FILE, "w") as f:
+        json.dump(data, f, indent=2)
+
+def log_trade_to_csv(trade_data):
+    """Append trade to CSV file"""
+    os.makedirs("data", exist_ok=True)
+    file_exists = os.path.exists(TRADES_CSV)
+    
+    with open(TRADES_CSV, "a", newline="") as f:
+        fieldnames = ["timestamp", "symbol", "action", "entry_price", "exit_price",  
+                     "quantity", "pnl", "pnl_pct", "hold_hours", "score", "rsi", 
+                     "momentum", "reason"]
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        
+        if not file_exists:
+            writer.writeheader()
+        
+        writer.writerow(trade_data)
+
+def calculate_portfolio_value(positions_data, ticker_data):
+    """Calculate total portfolio value"""
+    total = positions_data.get("cash", INITIAL_CAPITAL)
+    
+    for pos in positions_data.get("positions", []):
+        pair = pos["symbol"].replace("/", "").replace("-", "")
+        current_price = ticker_data.get(pair, {}).get("last_price", pos["entry_price"])
+        position_value = pos["quantity"] * current_price
+        total += position_value
+    
+    return total
+
 def read_history():
     ensure_history_file()
     with open(HISTORY_FILE, "r") as f:
@@ -263,6 +313,19 @@ def ask_openai_for_top_symbols():
     # Sort by score and take top performers
     scored_pairs.sort(key=lambda x: x[1], reverse=True)
     
+    # Option 1: Pure technical strategy (no GPT)
+    if not USE_GPT or not client.api_key:
+        print("Using pure technical scoring (GPT disabled)")
+        top_picks = []
+        for pair, score, ta, ticker in scored_pairs[:TOP_N]:
+            # Convert to proper format
+            formatted = pair.replace("USD", "/USD").replace("XBT/", "BTC/")
+            if "/" not in formatted:
+                formatted = formatted[:-3] + "/" + formatted[-3:]
+            top_picks.append(formatted)
+        return top_picks
+    
+    # Option 2: GPT-enhanced analysis
     # Build context with real market data + technical analysis
     market_context = "REAL-TIME MARKET DATA + TECHNICAL ANALYSIS:\n\n"
     market_context += "CoinGecko Trending (Top 5):\n"
@@ -389,46 +452,180 @@ def place_market_sell(pair, volume):
 def main():
     ensure_history_file()
     ts = datetime.utcnow().isoformat()
-    print("=== worker run at", ts, "===\nDRY_RUN =", DRY_RUN)
+    print("=== worker run at", ts, "===\nDRY_RUN =", DRY_RUN, "| USE_GPT =", USE_GPT)
 
-    top = ask_openai_for_top_symbols()
-    print("Top list from OpenAI:", top)
-
-    # Fetch real market data for selected symbols
-    ticker_data = fetch_kraken_ticker_data(top)
+    # Load current positions
+    portfolio = read_positions()
     
-    # For each current position (we don't maintain a DB here in the serverless run),
-    # we conservativey just record the top list and a bullish check for each symbol.
-    results = []
-    for s in top:
-        # Get market data for this symbol if available
-        market_info = ticker_data.get(s.replace("/", "").replace("-", ""), {})
-        bull = ask_openai_bullish(s, market_info)
-        results.append({
-            "symbol": s, 
-            "bullish": bull.get("bullish", False), 
-            "reason": bull.get("reason",""),
-            "confidence": bull.get("confidence", 0),
-            "24h_change": market_info.get("24h_change_pct"),
-            "volume_24h": market_info.get("24h_volume")
+    # Get top symbols based on technical analysis
+    top = ask_openai_for_top_symbols()
+    print("Top list:", top)
+
+    # Fetch real market data for all pairs
+    all_pairs = [s.replace("/", "").replace("-", "") for s in top]
+    ticker_data = fetch_kraken_ticker_data(all_pairs)
+    
+    # Check existing positions for exit signals
+    closed_positions = []
+    for pos in portfolio.get("positions", [])[:]:  # Copy list to modify during iteration
+        pair = pos["symbol"].replace("/", "").replace("-", "")
+        current_price = ticker_data.get(pair, {}).get("last_price")
+        
+        if not current_price:
+            continue
+        
+        entry_price = pos["entry_price"]
+        pnl_pct = ((current_price - entry_price) / entry_price) * 100
+        hold_hours = (datetime.utcnow() - datetime.fromisoformat(pos["entry_time"])).total_seconds() / 3600
+        
+        # Exit signals
+        should_exit = False
+        exit_reason = ""
+        
+        if pnl_pct <= -STOP_LOSS_PCT:
+            should_exit = True
+            exit_reason = f"Stop loss hit ({pnl_pct:.2f}%)"
+        elif pnl_pct >= TAKE_PROFIT_PCT:
+            should_exit = True
+            exit_reason = f"Take profit hit ({pnl_pct:.2f}%)"
+        elif pos["symbol"] not in top:
+            should_exit = True
+            exit_reason = "No longer in top picks"
+        
+        if should_exit:
+            # Close position
+            position_value = pos["quantity"] * current_price
+            pnl = position_value - (pos["quantity"] * entry_price)
+            
+            portfolio["cash"] += position_value
+            portfolio["positions"].remove(pos)
+            closed_positions.append(pos)
+            
+            # Log to CSV
+            log_trade_to_csv({
+                "timestamp": ts,
+                "symbol": pos["symbol"],
+                "action": "CLOSE",
+                "entry_price": round(entry_price, 2),
+                "exit_price": round(current_price, 2),
+                "quantity": round(pos["quantity"], 6),
+                "pnl": round(pnl, 2),
+                "pnl_pct": round(pnl_pct, 2),
+                "hold_hours": round(hold_hours, 1),
+                "score": pos.get("score", 0),
+                "rsi": pos.get("rsi", 0),
+                "momentum": pos.get("momentum", 0),
+                "reason": exit_reason
+            })
+            
+            print(f"CLOSED {pos['symbol']}: Entry=${entry_price:.2f}, Exit=${current_price:.2f}, P&L={pnl:.2f} ({pnl_pct:.2f}%), Reason: {exit_reason}")
+    
+    # Open new positions from top picks
+    current_symbols = [p["symbol"] for p in portfolio.get("positions", [])]
+    portfolio_value = calculate_portfolio_value(portfolio, ticker_data)
+    
+    for symbol in top:
+        if symbol in current_symbols:
+            continue  # Already have position
+        
+        if len(portfolio["positions"]) >= TOP_N:
+            break  # Max positions reached
+        
+        pair = symbol.replace("/", "").replace("-", "")
+        price_data = ticker_data.get(pair)
+        
+        if not price_data:
+            continue
+        
+        # Get technical data
+        ta = analyze_technicals(pair)
+        if not ta:
+            continue
+        
+        # Calculate position size
+        position_size_usd = portfolio_value * (TRADE_ALLOCATION_PCT / 100.0)
+        quantity = position_size_usd / price_data["last_price"]
+        
+        if portfolio["cash"] < position_size_usd:
+            continue  # Not enough cash
+        
+        # Open position
+        portfolio["cash"] -= position_size_usd
+        portfolio["positions"].append({
+            "symbol": symbol,
+            "entry_price": price_data["last_price"],
+            "entry_time": ts,
+            "quantity": quantity,
+            "score": ta.get("score", 0),
+            "rsi": ta.get("rsi", 0),
+            "momentum": ta.get("momentum_7h", 0)
         })
-
-    equity = get_equity_placeholder()
-
-    # Append to history
+        
+        # Log to CSV
+        log_trade_to_csv({
+            "timestamp": ts,
+            "symbol": symbol,
+            "action": "OPEN",
+            "entry_price": round(price_data["last_price"], 2),
+            "exit_price": 0,
+            "quantity": round(quantity, 6),
+            "pnl": 0,
+            "pnl_pct": 0,
+            "hold_hours": 0,
+            "score": ta.get("score", 0),
+            "rsi": ta.get("rsi", 0),
+            "momentum": ta.get("momentum_7h", 0),
+            "reason": "New entry"
+        })
+        
+        print(f"OPENED {symbol}: Entry=${price_data['last_price']:.2f}, Size=${position_size_usd:.2f}, Qty={quantity:.6f}")
+    
+    # Save updated portfolio
+    write_positions(portfolio)
+    
+    # Calculate and save performance metrics
+    final_portfolio_value = calculate_portfolio_value(portfolio, ticker_data)
+    total_return = ((final_portfolio_value - INITIAL_CAPITAL) / INITIAL_CAPITAL) * 100
+    
+    performance = {
+        "timestamp": ts,
+        "portfolio_value": round(final_portfolio_value, 2),
+        "cash": round(portfolio["cash"], 2),
+        "total_return_pct": round(total_return, 2),
+        "open_positions": len(portfolio.get("positions", [])),
+        "closed_today": len(closed_positions)
+    }
+    
+    # Save to performance CSV
+    os.makedirs("data", exist_ok=True)
+    file_exists = os.path.exists(PERFORMANCE_CSV)
+    with open(PERFORMANCE_CSV, "a", newline="") as f:
+        fieldnames = ["timestamp", "portfolio_value", "cash", "total_return_pct", 
+                     "open_positions", "closed_today"]
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        if not file_exists:
+            writer.writeheader()
+        writer.writerow(performance)
+    
+    print(f"\n=== PORTFOLIO SUMMARY ===")
+    print(f"Total Value: ${final_portfolio_value:.2f}")
+    print(f"Cash: ${portfolio['cash']:.2f}")
+    print(f"Total Return: {total_return:.2f}%")
+    print(f"Open Positions: {len(portfolio.get('positions', []))}")
+    print(f"Closed Today: {len(closed_positions)}")
+    
+    # Keep history for reference
     hist = read_history()
     hist.append({
         "time": ts,
         "top": top,
-        "top_diagnostics": results,
-        "equity": equity
+        "portfolio_value": final_portfolio_value,
+        "total_return_pct": total_return
     })
-    # Keep history size reasonable (e.g., last 10k entries)
-    if len(hist) > 20000:
-        hist = hist[-20000:]
+    if len(hist) > 5000:
+        hist = hist[-5000:]
     write_history(hist)
-
-    print("History length:", len(hist))
+    
     print("Worker finished.")
 
 if __name__ == "__main__":
