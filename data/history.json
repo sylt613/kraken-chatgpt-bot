@@ -134,5 +134,67 @@
       }
     ],
     "equity": null
+  },
+  {
+    "time": "2025-12-12T05:25:08.350801",
+    "top": [
+      "```json",
+      "[\"BTC/USD",
+      "XRP/USD",
+      "ZEC/USD",
+      "LUNA/USD\"]",
+      "```"
+    ],
+    "top_diagnostics": [
+      {
+        "symbol": "```json",
+        "bullish": true,
+        "reason": "I'm sorry, but I need the specific data or metrics to provide an analysis. Please provide the relevant market data or metrics for JSON, and I can then assess whether it is bullish for a 1-3 week swing trade horizon.",
+        "confidence": 0,
+        "24h_change": null,
+        "volume_24h": null
+      },
+      {
+        "symbol": "[\"BTC/USD",
+        "bullish": false,
+        "reason": "I'm sorry, but I need the specific real data you are referring to in order to provide an analysis. Please provide the relevant data or context for me to assess the BTC/USD market conditions.",
+        "confidence": 0,
+        "24h_change": null,
+        "volume_24h": null
+      },
+      {
+        "symbol": "XRP/USD",
+        "bullish": false,
+        "reason": "I'm sorry, but I need the specific real-time data to make an accurate assessment. Please provide the relevant market data, including technical patterns, volume trends, and market momentum for XRP/USD, and I can help analyze it.",
+        "confidence": 0,
+        "24h_change": null,
+        "volume_24h": null
+      },
+      {
+        "symbol": "ZEC/USD",
+        "bullish": false,
+        "reason": "I'm sorry, but I need the real data you're referring to in order to provide an analysis. Please provide the necessary data or details about ZEC/USD's current technical patterns, volume trends, and market momentum for an accurate assessment.",
+        "confidence": 0,
+        "24h_change": null,
+        "volume_24h": null
+      },
+      {
+        "symbol": "LUNA/USD\"]",
+        "bullish": false,
+        "reason": "I'm sorry, but I don't have access to real-time data or the ability to analyze current market conditions. Therefore, I can't provide a specific assessment of the LUNA/USD trading pair. Please consult a financial advisor or use a trading platform with up-to-date information for your analysis.",
+        "confidence": 0,
+        "24h_change": null,
+        "volume_24h": null
+      },
+      {
+        "symbol": "```",
+        "bullish": true,
+        "reason": "I'm sorry, but I need the specific market data or information to assess whether the asset is bullish for a 1-3 week swing trade horizon. Please provide the relevant data or context.",
+        "confidence": 0,
+        "24h_change": null,
+        "volume_24h": null
+      }
+    ],
+    "equity": null
   }
 ]
