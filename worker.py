@@ -23,6 +23,7 @@ except Exception:
 
 # ---------- CONFIG ----------
 DRY_RUN = os.getenv("DRY_RUN", "True").lower() in ("true", "1", "yes")  # Control via GitHub Secret
+TRADE_ALLOCATION_PCT = float(os.getenv("TRADE_ALLOCATION_PCT", "10"))  # % of account per trade
 TOP_N = 10
 HISTORY_FILE = "data/history.json"
 OPENAI_MODEL = "gpt-4o"  # change if you prefer another model
@@ -121,17 +122,18 @@ def get_equity_placeholder():
         return None
 
 # Optional simplified order functions (very naive; real trading requires careful step-size handling)
-def place_market_buy(pair, notional):
+def place_market_buy(pair, equity):
+    notional = equity * (TRADE_ALLOCATION_PCT / 100.0)
     if DRY_RUN:
-        print(f"[DRY_RUN] would BUY {pair} for ${notional}")
-        return {"status":"simulated","pair":pair,"notional":notional}
+        print(f"[DRY_RUN] would BUY {pair} for ${notional:.2f} ({TRADE_ALLOCATION_PCT}% of ${equity:.2f})")
+        return {"status":"simulated","pair":pair,"notional":notional,"allocation_pct":TRADE_ALLOCATION_PCT}
     if KrakenAPIConnector is None:
         raise RuntimeError("Kraken libs not installed")
     # NOTE: implement carefully if enabling live trading
     api = KrakenAPIConnector(KRAKEN_KEY, KRAKEN_SECRET)
     k = KrakenAPI(api)
     # This is placeholder — user must implement precise sizing & pair handling
-    return {"status":"not-implemented"}
+    return {"status":"not-implemented","notional":notional,"allocation_pct":TRADE_ALLOCATION_PCT}
 
 def place_market_sell(pair, volume):
     if DRY_RUN:

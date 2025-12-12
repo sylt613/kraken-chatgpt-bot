@@ -31,6 +31,7 @@ jobs:
           KRAKEN_API_KEY: ${{ secrets.KRAKEN_API_KEY }}
           KRAKEN_API_SECRET: ${{ secrets.KRAKEN_API_SECRET }}
           DRY_RUN: ${{ secrets.DRY_RUN }}
+          TRADE_ALLOCATION_PCT: ${{ secrets.TRADE_ALLOCATION_PCT }}
         run: |
           python worker.py
           # make sure history file exists and is tracked
