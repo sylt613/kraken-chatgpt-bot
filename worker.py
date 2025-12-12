@@ -11,7 +11,7 @@ import os
 import json
 import time
 from datetime import datetime
-import openai
+from openai import OpenAI
 
 # Optional Kraken libs used only if DRY_RUN=False and KRAKEN credentials provided
 try:
@@ -28,7 +28,7 @@ HISTORY_FILE = "data/history.json"
 OPENAI_MODEL = "gpt-4o"  # change if you prefer another model
 # --------------------------------
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 KRAKEN_KEY = os.getenv("KRAKEN_API_KEY")
 KRAKEN_SECRET = os.getenv("KRAKEN_API_SECRET")
@@ -56,13 +56,13 @@ def ask_openai_for_top_symbols():
         "Use Kraken pair format (example: \"XBT/USD\", \"ETH/USD\"). Output ONLY a JSON array."
     )
     try:
-        resp = openai.ChatCompletion.create(
+        resp = client.chat.completions.create(
             model=OPENAI_MODEL,
             messages=[{"role":"user","content":prompt}],
             temperature=0.6,
             max_tokens=300
         )
-        text = resp["choices"][0]["message"]["content"].strip()
+        text = resp.choices[0].message.content.strip()
         # parse JSON array or fallback: split by commas
         try:
             arr = json.loads(text)
@@ -82,13 +82,13 @@ def ask_openai_bullish(symbol):
         "Return a JSON object EXACTLY like: {{\"bullish\": true/false, \"reason\": \"one-sentence reason\"}}"
     )
     try:
-        resp = openai.ChatCompletion.create(
+        resp = client.chat.completions.create(
             model=OPENAI_MODEL,
             messages=[{"role":"user","content":prompt}],
             temperature=0.3,
             max_tokens=150
         )
-        text = resp["choices"][0]["message"]["content"].strip()
+        text = resp.choices[0].message.content.strip()
         try:
             return json.loads(text)
         except Exception:
