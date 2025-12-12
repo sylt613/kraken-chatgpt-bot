@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Kraken Swing Bot — Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="wrap">
+    <h1>Kraken Swing Bot</h1>
+    <p>Dashboard (updated from GitHub Actions history)</p>
+    <p><a href="charts.html" target="_blank">Open Charts</a> — (GitHub Pages / Render)</p>
+
+    <h2>Latest Top-10 (OpenAI)</h2>
+    <pre id="top">loading...</pre>
+
+    <h2>Latest run timestamp</h2>
+    <div id="ts">loading...</div>
+
+    <script>
+      async function loadLatest() {
+        const url = "https://raw.githubusercontent.com/sylt613/kraken-chatgpt-bot/main/data/history.json";
+        try {
+          const res = await fetch(url);
+          const hist = await res.json();
+          if(!hist || hist.length===0) {
+            document.getElementById("top").innerText = "no history yet";
+            document.getElementById("ts").innerText = "-";
+            return;
+          }
+          const last = hist[hist.length-1];
+          document.getElementById("top").innerText = JSON.stringify(last.top, null, 2);
+          document.getElementById("ts").innerText = last.time;
+        } catch (e) {
+          document.getElementById("top").innerText = "error loading history";
+          document.getElementById("ts").innerText = e;
+        }
+      }
+      loadLatest();
+    </script>
+  </div>
+</body>
+</html>

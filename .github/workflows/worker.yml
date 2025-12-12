@@ -1,0 +1,38 @@
+name: scheduled-trading-worker
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # every 15 minutes (change if you want)
+  workflow_dispatch: {}      # manual run button in Actions
+
+jobs:
+  run_worker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: pip install -r requirements.txt
+
+      - name: Run worker
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          KRAKEN_API_KEY: ${{ secrets.KRAKEN_API_KEY }}
+          KRAKEN_API_SECRET: ${{ secrets.KRAKEN_API_SECRET }}
+        run: |
+          python worker.py
+          # make sure history file exists and is tracked
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/history.json || true
+          git commit -m "update history" || true
+          git push || true

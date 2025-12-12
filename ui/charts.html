@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Kraken Swing Bot — Charts</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="wrap">
+    <h1>Equity & Top-Symbol History</h1>
+    <p>Data pulled from <code>data/history.json</code> in your GitHub repo.</p>
+
+    <canvas id="equityChart" height="120"></canvas>
+    <h3>Top-10 Symbol Snapshot (text by run)</h3>
+    <div id="symbols"></div>
+
+    <script>
+      async function loadData() {
+        const url = "https://raw.githubusercontent.com/sylt613/kraken-chatgpt-bot/main/data/history.json";
+        const res = await fetch(url);
+        const hist = await res.json();
+        if(!hist || hist.length===0) {
+          document.getElementById("symbols").innerText = "No history yet";
+          return;
+        }
+        // equity timeseries
+        const times = hist.map(h => h.time);
+        const equities = hist.map(h => (h.equity === null ? null : h.equity));
+
+        // create equity dataset — filter nulls
+        const labels = times;
+        const data = equities.map(v => v === null ? null : v);
+
+        new Chart(document.getElementById("equityChart").getContext("2d"), {
+          type: "line",
+          data: {
+            labels: labels,
+            datasets: [{
+              label: "Equity (raw / placeholder)",
+              data: data,
+              fill: false,
+              spanGaps: true
+            }]
+          },
+          options: {
+            scales: { x: { display: true }, y: { display: true } }
+          }
+        });
+
+        // Show latest symbol snapshots
+        const out = document.getElementById("symbols");
+        out.innerHTML = "";
+        const latest = hist.slice(-10).reverse(); // show last 10 runs
+        latest.forEach(h => {
+          const div = document.createElement("div");
+          div.className = "snap";
+          const t = document.createElement("div");
+          t.className = "snap-time";
+          t.innerText = h.time;
+          const list = document.createElement("pre");
+          list.innerText = JSON.stringify(h.top, null, 2);
+          div.appendChild(t);
+          div.appendChild(list);
+          out.appendChild(div);
+        });
+      }
+      loadData();
+    </script>
+  </div>
+</body>
+</html>
