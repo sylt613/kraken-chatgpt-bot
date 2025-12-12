@@ -41,8 +41,8 @@ TRADES_CSV = "data/trades.csv"
 PERFORMANCE_CSV = "data/performance.csv"
 OPENAI_MODEL = "gpt-4o"  # gpt-4o for best reasoning
 INITIAL_CAPITAL = 10000.0  # Starting capital for paper trading
-STOP_LOSS_PCT = 15.0  # Stop loss percentage
-TAKE_PROFIT_PCT = 25.0  # Take profit percentage
+STOP_LOSS_PCT = 9.0  # Stop loss percentage (optimized)
+TAKE_PROFIT_PCT = 22.5  # Take profit percentage (optimized)
 # --------------------------------
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -277,29 +277,39 @@ def ask_openai_for_top_symbols():
         # Score the pair (0-100)
         score = 0
         
-        # RSI scoring (30-70 is good, avoid extremes)
+        # RSI scoring (45-65 is ideal, avoid extremes)
         if ta.get('rsi'):
-            if 40 <= ta['rsi'] <= 60:
-                score += 25
-            elif 30 <= ta['rsi'] <= 70:
+            if 45 <= ta['rsi'] <= 65:
+                score += 30
+            elif 40 <= ta['rsi'] <= 70:
                 score += 15
+            elif ta['rsi'] > 75 or ta['rsi'] < 30:
+                score -= 10  # Penalize extremes
         
-        # Trend scoring
+        # Trend scoring (increased weight)
         if ta.get('trend') == 'bullish':
+            score += 30
+            # Bonus for strong trend (price above both MAs)
+            if ta.get('ma20') and ta.get('ma50'):
+                if ta['current_price'] > ta['ma20'] > ta['ma50']:
+                    score += 10
+        
+        # Volume scoring (require above-average volume)
+        if ta.get('volume_ratio', 0) > 2.0:
             score += 20
-        
-        # Volume scoring (high volume = more reliable)
-        if ta.get('volume_ratio', 0) > 1.5:
-            score += 15
-        elif ta.get('volume_ratio', 0) > 1.0:
+        elif ta.get('volume_ratio', 0) > 1.5:
             score += 10
+        elif ta.get('volume_ratio', 0) < 0.8:
+            score -= 5  # Penalize low volume
         
-        # Momentum scoring
+        # Momentum scoring (require positive momentum)
         momentum = ta.get('momentum_7h', 0)
-        if momentum > 5:
-            score += 20
-        elif momentum > 0:
-            score += 10
+        if momentum > 8:
+            score += 25
+        elif momentum > 3:
+            score += 15
+        elif momentum < -5:
+            score -= 10  # Penalize negative momentum
         
         # 24h performance
         change_24h = ticker_data[pair]['24h_change_pct']

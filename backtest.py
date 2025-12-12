@@ -13,8 +13,8 @@ import numpy as np
 # Import config from worker
 INITIAL_CAPITAL = 10000.0
 TRADE_ALLOCATION_PCT = 10.0
-STOP_LOSS_PCT = 15.0
-TAKE_PROFIT_PCT = 25.0
+STOP_LOSS_PCT = 9.0
+TAKE_PROFIT_PCT = 22.5
 TOP_N = 10
 
 def fetch_historical_ohlc(pair, since_days=180):
@@ -83,27 +83,40 @@ def calculate_technical_score(ohlc_window):
     momentum = ((closes[-1] - closes[-7]) / closes[-7] * 100) if len(closes) >= 7 else 0
     trend = "bullish" if current_price > ma50 else "bearish"
     
-    # Score calculation
+    # Score calculation (optimized)
     score = 0
     
+    # RSI scoring (tighter requirements)
     if rsi:
-        if 40 <= rsi <= 60:
-            score += 25
-        elif 30 <= rsi <= 70:
+        if 45 <= rsi <= 65:
+            score += 30
+        elif 40 <= rsi <= 70:
             score += 15
+        elif rsi > 75 or rsi < 30:
+            score -= 10  # Penalize extremes
     
+    # Trend (increased weight)
     if trend == 'bullish':
-        score += 20
+        score += 30
+        # Bonus for strong trend alignment
+        if current_price > ma20 > ma50:
+            score += 10
     
-    if volume_ratio > 1.5:
+    # Volume (require above-average)
+    if volume_ratio > 2.0:
+        score += 20
+    elif volume_ratio > 1.5:
+        score += 10
+    elif volume_ratio < 0.8:
+        score -= 5
+    
+    # Momentum (require positive momentum)
+    if momentum > 8:
+        score += 25
+    elif momentum > 3:
         score += 15
-    elif volume_ratio > 1.0:
-        score += 10
-    
-    if momentum > 5:
-        score += 20
-    elif momentum > 0:
-        score += 10
+    elif momentum < -5:
+        score -= 10
     
     # 24h change
     change_24h = ((closes[-1] - closes[-2]) / closes[-2] * 100) if len(closes) >= 2 else 0
@@ -182,7 +195,7 @@ def run_backtest():
             elif pnl_pct >= TAKE_PROFIT_PCT:
                 should_exit = True
                 exit_reason = "Take Profit"
-            elif days_held >= 14:  # Max hold period for swing trade
+            elif days_held >= 7:  # Max hold period (reduced for quick exits)
                 should_exit = True
                 exit_reason = "Time Exit"
             
@@ -219,19 +232,33 @@ def run_backtest():
         # Sort by score
         pair_scores.sort(key=lambda x: x[1], reverse=True)
         
-        # Open new positions
+        # Market regime filter - count how many pairs are bullish
+        bullish_count = sum(1 for pair, score, price in pair_scores if score >= 60)
+        market_is_bullish = bullish_count >= 5  # Need at least 5 pairs looking good
+        
+        # Open new positions (only in bullish market regime)
         current_symbols = [p['symbol'] for p in positions]
         portfolio_value = cash + sum(p['quantity'] * current_prices.get(p['symbol'], p['entry_price']) for p in positions)
         
         for pair, score, price in pair_scores[:TOP_N]:
+            if not market_is_bullish:
+                break  # Don't enter new trades in bearish market
+            
             if pair in current_symbols:
                 continue
             
             if len(positions) >= TOP_N:
                 break
             
-            if score < 40:  # Minimum score threshold
+            if score < 65:  # Minimum score threshold
                 continue
+            
+            # Require decent 3-day momentum
+            window = historical_data[pair][max(0, day_idx-3):day_idx+1]
+            if len(window) >= 4:
+                change_3d = ((float(window[-1][4]) - float(window[-4][4])) / float(window[-4][4])) * 100
+                if change_3d < 2:  # Must be up at least 2% over 3 days
+                    continue
             
             position_size_usd = portfolio_value * (TRADE_ALLOCATION_PCT / 100.0)
             
