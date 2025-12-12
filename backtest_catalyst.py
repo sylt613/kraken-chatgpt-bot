@@ -31,8 +31,8 @@ import time
 
 # ============ CATALYST STRATEGY PARAMETERS ============
 INITIAL_CAPITAL = 10000.0
-POSITION_SIZE_PCT = 15.0      # Larger positions on fewer trades
-MAX_POSITIONS = 3             # Concentrated on best signals
+POSITION_SIZE_PCT = 12.0      # Smaller positions for more diversification
+MAX_POSITIONS = 7             # More trades, more opportunities
 STOP_LOSS_PCT = 10.0          # Wider stops for volatile plays
 TAKE_PROFIT_PCT = 35.0        # Let big winners run
 TRAILING_STOP_PCT = 18.0      # Wide trailing stop
@@ -41,8 +41,8 @@ TRAILING_STOP_PCT = 18.0      # Wide trailing stop
 VOLUME_SPIKE_THRESHOLD = 3.0  # Higher volume threshold for conviction
 BREAKOUT_THRESHOLD = 5.0      # Price must break out by 5%+
 MOMENTUM_DAYS = 3             # Look at 3-day momentum
-MIN_CATALYST_SCORE = 85       # VERY HIGH threshold - only best signals
-MIN_GPT_SENTIMENT = 35        # Require positive sentiment confirmation
+MIN_CATALYST_SCORE = 75       # Lower threshold for more trades
+MIN_GPT_SENTIMENT = 25        # Lower sentiment threshold for more trades
 
 # Focus on high-beta altcoins that respond to news
 CATALYST_PAIRS = [
