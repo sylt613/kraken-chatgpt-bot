@@ -12018,5 +12018,22 @@
     ],
     "portfolio_value": 10000.0,
     "total_return_pct": 0.0
+  },
+  {
+    "time": "2025-12-23T16:58:35.314196",
+    "top": [
+      "```json",
+      "[\"XBT/USD",
+      "ETH/USD",
+      "SOL/USD",
+      "AAVE/USD",
+      "XBT/EUR",
+      "ETH/EUR",
+      "SOL/EUR",
+      "AAVE/EUR",
+      "XBT/USDT"
+    ],
+    "portfolio_value": 10000.0,
+    "total_return_pct": 0.0
   }
 ]
