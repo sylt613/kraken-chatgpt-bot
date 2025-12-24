@@ -13079,5 +13079,22 @@
     ],
     "portfolio_value": 10000.0,
     "total_return_pct": 0.0
+  },
+  {
+    "time": "2025-12-24T17:30:44.687126",
+    "top": [
+      "```json",
+      "[",
+      "SOL/USD",
+      "AAVE/USD",
+      "SOL/EUR",
+      "AAVE/EUR",
+      "SOL/USDT",
+      "AAVE/USDT",
+      "SOL/BTC",
+      "AAVE/BTC"
+    ],
+    "portfolio_value": 10000.0,
+    "total_return_pct": 0.0
   }
 ]
