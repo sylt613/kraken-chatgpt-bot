@@ -12474,5 +12474,22 @@
     ],
     "portfolio_value": 10000.0,
     "total_return_pct": 0.0
+  },
+  {
+    "time": "2025-12-24T04:28:07.640681",
+    "top": [
+      "```json",
+      "[",
+      "ETH/USD",
+      "AAVE/USD",
+      "ETH/EUR",
+      "AAVE/EUR",
+      "ETH/GBP",
+      "AAVE/GBP",
+      "ETH/JPY",
+      "AAVE/JPY"
+    ],
+    "portfolio_value": 10000.0,
+    "total_return_pct": 0.0
   }
 ]
