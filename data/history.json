@@ -14272,5 +14272,11 @@
     ],
     "portfolio_value": 10000.0,
     "total_return_pct": 0.0
+  },
+  {
+    "time": "2025-12-25T20:50:57.090587",
+    "top": [],
+    "portfolio_value": 10000.0,
+    "total_return_pct": 0.0
   }
 ]
