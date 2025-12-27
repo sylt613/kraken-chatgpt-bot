@@ -16030,5 +16030,22 @@
     ],
     "portfolio_value": 10000.0,
     "total_return_pct": 0.0
+  },
+  {
+    "time": "2025-12-27T14:31:34.084408",
+    "top": [
+      "```json",
+      "[",
+      "SOL/USD",
+      "ZEC/USD",
+      "FLOW/USD",
+      "DASH/USD",
+      "SOL/EUR",
+      "ZEC/EUR",
+      "FLOW/EUR",
+      "DASH/EUR"
+    ],
+    "portfolio_value": 10000.0,
+    "total_return_pct": 0.0
   }
 ]
