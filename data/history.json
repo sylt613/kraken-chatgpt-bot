@@ -17352,5 +17352,22 @@
     ],
     "portfolio_value": 10000.0,
     "total_return_pct": 0.0
+  },
+  {
+    "time": "2025-12-28T19:47:13.115050",
+    "top": [
+      "```json",
+      "[",
+      "XBT/USD",
+      "ETH/USD",
+      "FLOW/USD",
+      "ZEC/USD",
+      "CC/USD",
+      "TOKEN/USD",
+      "XBT/EUR",
+      "ETH/EUR"
+    ],
+    "portfolio_value": 10000.0,
+    "total_return_pct": 0.0
   }
 ]
