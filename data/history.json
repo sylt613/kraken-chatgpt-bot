@@ -18389,5 +18389,22 @@
     ],
     "portfolio_value": 10000.0,
     "total_return_pct": 0.0
+  },
+  {
+    "time": "2025-12-29T21:29:25.144277",
+    "top": [
+      "```json",
+      "[",
+      "ETH/USD",
+      "ZEC/USD",
+      "ETH/EUR",
+      "ZEC/EUR",
+      "ETH/BTC",
+      "ZEC/BTC",
+      "ETH/GBP",
+      "ZEC/GBP"
+    ],
+    "portfolio_value": 10000.0,
+    "total_return_pct": 0.0
   }
 ]
