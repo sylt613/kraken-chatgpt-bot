@@ -18814,5 +18814,22 @@
     ],
     "portfolio_value": 10000.0,
     "total_return_pct": 0.0
+  },
+  {
+    "time": "2025-12-30T09:43:59.948939",
+    "top": [
+      "```json",
+      "[",
+      "ETH/USD",
+      "LIT/USD",
+      "HYPE/USD",
+      "ASTER/USD",
+      "ETH/EUR",
+      "LIT/EUR",
+      "HYPE/EUR",
+      "ASTER/EUR"
+    ],
+    "portfolio_value": 10000.0,
+    "total_return_pct": 0.0
   }
 ]
