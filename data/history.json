@@ -20088,5 +20088,22 @@
     ],
     "portfolio_value": 10000.0,
     "total_return_pct": 0.0
+  },
+  {
+    "time": "2025-12-31T15:32:40.911716",
+    "top": [
+      "```json",
+      "[",
+      "ETH/USD",
+      "ETH/EUR",
+      "XBT/USD",
+      "XBT/EUR",
+      "LTC/USD",
+      "LTC/EUR",
+      "ADA/USD",
+      "ADA/EUR"
+    ],
+    "portfolio_value": 10000.0,
+    "total_return_pct": 0.0
   }
 ]
