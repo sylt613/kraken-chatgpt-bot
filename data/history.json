@@ -20105,5 +20105,22 @@
     ],
     "portfolio_value": 10000.0,
     "total_return_pct": 0.0
+  },
+  {
+    "time": "2025-12-31T15:50:21.282918",
+    "top": [
+      "```json",
+      "[",
+      "ETH/USD",
+      "ETH/EUR",
+      "ETH/BTC",
+      "LTC/USD",
+      "XRP/USD",
+      "ADA/USD",
+      "DOT/USD",
+      "SOL/USD"
+    ],
+    "portfolio_value": 10000.0,
+    "total_return_pct": 0.0
   }
 ]
