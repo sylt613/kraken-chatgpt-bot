@@ -20037,5 +20037,22 @@
     ],
     "portfolio_value": 10000.0,
     "total_return_pct": 0.0
+  },
+  {
+    "time": "2025-12-31T14:34:35.563440",
+    "top": [
+      "```json",
+      "[",
+      "XBT/USD",
+      "ETH/USD",
+      "XRP/USD",
+      "LIT/USD",
+      "LIGHT/USD",
+      "XBT/EUR",
+      "ETH/EUR",
+      "XRP/EUR"
+    ],
+    "portfolio_value": 10000.0,
+    "total_return_pct": 0.0
   }
 ]
