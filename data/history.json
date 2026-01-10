@@ -29397,5 +29397,22 @@
     ],
     "portfolio_value": 10000.0,
     "total_return_pct": 0.0
+  },
+  {
+    "time": "2026-01-10T11:09:21.302803",
+    "top": [
+      "```json",
+      "[",
+      "SOL/USD",
+      "ZEC/USD",
+      "POL/USD",
+      "LIT/USD",
+      "SOL/EUR",
+      "ZEC/EUR",
+      "POL/EUR",
+      "LIT/EUR"
+    ],
+    "portfolio_value": 10000.0,
+    "total_return_pct": 0.0
   }
 ]
