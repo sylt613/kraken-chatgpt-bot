@@ -30461,5 +30461,22 @@
     ],
     "portfolio_value": 10000.0,
     "total_return_pct": 0.0
+  },
+  {
+    "time": "2026-01-11T11:46:32.759619",
+    "top": [
+      "```json",
+      "[",
+      "XMR/USD",
+      "ZEC/USD",
+      "POL/USD",
+      "LIT/USD",
+      "PENGU/USD",
+      "XMR/EUR",
+      "ZEC/EUR",
+      "POL/EUR"
+    ],
+    "portfolio_value": 10000.0,
+    "total_return_pct": 0.0
   }
 ]
