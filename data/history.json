@@ -30563,5 +30563,22 @@
     ],
     "portfolio_value": 10000.0,
     "total_return_pct": 0.0
+  },
+  {
+    "time": "2026-01-11T14:32:43.269563",
+    "top": [
+      "```json",
+      "[",
+      "ETH/USD",
+      "XMR/USD",
+      "ZEC/USD",
+      "ETH/EUR",
+      "XMR/EUR",
+      "ZEC/EUR",
+      "ETH/GBP",
+      "XMR/GBP"
+    ],
+    "portfolio_value": 10000.0,
+    "total_return_pct": 0.0
   }
 ]
