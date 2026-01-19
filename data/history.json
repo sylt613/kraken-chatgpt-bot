@@ -37500,5 +37500,22 @@
     ],
     "portfolio_value": 10000.0,
     "total_return_pct": 0.0
+  },
+  {
+    "time": "2026-01-19T01:00:49.186723",
+    "top": [
+      "```json",
+      "[",
+      "BTC/USD",
+      "ETH/USD",
+      "SAND/USD",
+      "AXS/USD",
+      "ZEC/USD",
+      "XBT/EUR",
+      "ETH/EUR",
+      "LTC/USD"
+    ],
+    "portfolio_value": 10000.0,
+    "total_return_pct": 0.0
   }
 ]
