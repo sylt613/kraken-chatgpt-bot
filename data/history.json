@@ -38886,5 +38886,22 @@
     ],
     "portfolio_value": 10000.0,
     "total_return_pct": 0.0
+  },
+  {
+    "time": "2026-01-20T21:40:46.989712",
+    "top": [
+      "```json",
+      "[\"XBT/USD",
+      "ETH/USD",
+      "XMR/USD",
+      "SAND/USD",
+      "HYPE/USD",
+      "XBT/EUR",
+      "ETH/EUR",
+      "XMR/EUR",
+      "SAND/EUR"
+    ],
+    "portfolio_value": 10000.0,
+    "total_return_pct": 0.0
   }
 ]
