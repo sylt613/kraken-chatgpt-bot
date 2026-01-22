@@ -39803,5 +39803,22 @@
     ],
     "portfolio_value": 10000.0,
     "total_return_pct": 0.0
+  },
+  {
+    "time": "2026-01-22T06:56:53.302932",
+    "top": [
+      "```json",
+      "[",
+      "BTC/USD",
+      "ETH/USD",
+      "AXS/USD",
+      "ETH/EUR",
+      "BTC/EUR",
+      "ETH/GBP",
+      "BTC/GBP",
+      "AXS/EUR"
+    ],
+    "portfolio_value": 10000.0,
+    "total_return_pct": 0.0
   }
 ]
