@@ -50097,5 +50097,22 @@
     ],
     "portfolio_value": 10000.0,
     "total_return_pct": 0.0
+  },
+  {
+    "time": "2026-02-06T05:06:12.940147",
+    "top": [
+      "```json",
+      "[",
+      "XBT/USD",
+      "ETH/USD",
+      "SOL/USD",
+      "ETH/EUR",
+      "XBT/EUR",
+      "SOL/EUR",
+      "ETH/GBP",
+      "XBT/GBP"
+    ],
+    "portfolio_value": 10000.0,
+    "total_return_pct": 0.0
   }
 ]
