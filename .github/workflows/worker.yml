@@ -1,8 +1,8 @@
 name: scheduled-trading-worker
 
 on:
-  schedule:
-    - cron: "*/15 * * * *"   # every 15 minutes (change if you want)
+  # schedule:
+  #   - cron: "*/15 * * * *"   # every 15 minutes (change if you want)
   workflow_dispatch: {}      # manual run button in Actions
 
 jobs:
